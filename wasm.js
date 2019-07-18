@@ -1,3 +1,5 @@
+// https://github.com/WebAssembly/tool-conventions/blob/master/DynamicLinking.md
+
 // This is not necessarily a complete implementation of a dynamic loader, nor
 // is it well tested.
 

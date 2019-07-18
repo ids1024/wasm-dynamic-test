@@ -7,6 +7,7 @@ const fs = require('fs');
 const STACK_SIZE = 65536;
 const utf8decoder = new TextDecoder(); 
 
+// Round 'num' up so it is aligned to a multiple of 'align'
 function round_up_align(num, align) {
     if (align == 0 || num % align == 0) {
         return num;
@@ -14,6 +15,8 @@ function round_up_align(num, align) {
     return num + align - num % align;
 }
 
+// Reads a 'varint32' integer, which is based on the variable-length encoding
+// LEB128
 function read_varuint32(array, idx) {
     let value = 0;
     let count = 0;
@@ -28,6 +31,8 @@ function read_varuint32(array, idx) {
     return [value, idx + count];
 }
 
+// Extracts the "dylib" Custom section from WebAssembly module, and parses it
+// into an object.
 function parse_dylink(module) {
     let section = WebAssembly.Module.customSections(module, "dylink");
     let array = new Uint8Array(section[0]);

@@ -27,16 +27,7 @@ function read_varuint32(array, idx) {
     return [value, idx + count];
 }
 
-dynamic_libraries = {};
-
-async function load_wasm_module(path, env) {
-    if (dynamic_libraries[path] !== undefined) {
-        return dynamic_libaries[path];
-    }
-
-    let data = fs.readFileSync(path);
-    let module = await WebAssembly.compile(data);
-
+function parse_dylink(module) {
     let dylink = WebAssembly.Module.customSections(module, "dylink");
     let dylink_array = new Uint8Array(dylink[0]);
 
@@ -49,47 +40,79 @@ async function load_wasm_module(path, env) {
     [tablealignment, idx] = read_varuint32(dylink_array, idx);
     [needed_dynlibs_count, idx] = read_varuint32(dylink_array, idx);
 
-    importObject = {"env": {}};
-
     // Load dependency modules, and import their exports
     let utf8decoder = new TextDecoder(); 
+    let needed_dynlibs = [];
     for (var i = 0; i < needed_dynlibs_count; i++) {
         let length;
         [length, idx] = read_varuint32(dylink_array, idx);
         let path = utf8decoder.decode(dylink[0].slice(idx, idx + length));
-        let library = await load_wasm_module(path, env);
-        Object.assign(importObject.env, library.exports);
+        needed_dynlibs.push(path);
         idx += length;
     }
 
-    env.__memory_base = round_up_align(env.__memory_base, memoryalignment);
-
-    Object.assign(importObject.env, env);
-
-    let instance = await WebAssembly.instantiate(module, importObject);
-    dynamic_libraries[path] = instance;
-
-    // Update values that will be used by next module
-    env.__memory_base += memorysize;
-    env.__table_base += tablesize;
-
-    return instance;
+    return {
+        memorysize: memorysize,
+        memoryalignment: memoryalignment,
+        tablesize: tablesize,
+        tablealignment: tablealignment,
+        needed_dynlibs: needed_dynlibs
+    }
 }
 
-function load_wasm(path) {
-    let memory = new WebAssembly.Memory({initial: 1024});
-    let  __indirect_function_table = new WebAssembly.Table({element: "anyfunc", initial: 0});
-    // TODO determine sensible value for stack pointer (look at what lld does)
-    let __stack_pointer = new WebAssembly.Global({value: "i32", mutable: true}, STACK_SIZE);
-    let env = {
-        memory: memory,
-        __indirect_function_table: __indirect_function_table,
-        __stack_pointer: __stack_pointer,
-        __memory_base: STACK_SIZE,
-        __table_base: 0,
-        print_int: console.log
-    };
-    return load_wasm_module(path, env);
+class DynamicWebAssembly {
+    constructor(imports) {
+        this.dynamic_libraries = {};
+        this.memory = new WebAssembly.Memory({initial: 1024});
+        this.__indirect_function_table = new WebAssembly.Table({element: "anyfunc", initial: 0});
+        this.__stack_pointer = new WebAssembly.Global({value: "i32", mutable: true}, STACK_SIZE);
+        this.__memory_base = STACK_SIZE;
+        this.__table_base = 0;
+        this.imports = imports;
+    }
+
+    make_env() {
+        let env = {
+            memory: this.memory,
+            __indirect_function_table: this.__indirect_function_table,
+            __stack_pointer: this.__stack_pointer,
+            __memory_base: this.__memory_base,
+            __table_base: this.__table_base
+        };
+        Object.assign(env, this.imports);
+        return env;
+    }
+
+    async load_module(path) {
+        if (this.dynamic_libraries[path] !== undefined) {
+            return this.dynamic_libaries[path];
+        }
+
+        let data = fs.readFileSync(path);
+        let module = await WebAssembly.compile(data);
+        let dylink = parse_dylink(module);
+
+        let dynlibs = [];
+        for (let path of dylink.needed_dynlibs) {
+            dynlibs.push(await this.load_module(path));
+        }
+
+        let env = this.make_env();
+        env.__memory_base = round_up_align(env.__memory_base, dylink.memoryalignment);
+        for (let library of dynlibs) {
+            Object.assign(env, library.exports);
+        }
+
+        let instance = await WebAssembly.instantiate(module, {env: env});
+        this.dynamic_libraries[path] = instance;
+
+        // Update values that will be used by next module
+        this.__memory_base = env.__memory_base + dylink.memorysize;
+        this.__table_base = env.__table_base + dylink.tablesize;
+
+        return instance;
+    }
 }
 
-load_wasm("bin.wasm").then(instance => instance.exports.main());
+let wasm = new DynamicWebAssembly({print_int: console.log});
+wasm.load_module("bin.wasm").then(instance => instance.exports.main());

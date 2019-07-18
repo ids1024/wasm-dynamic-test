@@ -5,6 +5,7 @@ const fs = require('fs');
 
 // Default value wasm-ld uses; equal to WasmPageSize
 const STACK_SIZE = 65536;
+const utf8decoder = new TextDecoder(); 
 
 function round_up_align(num, align) {
     if (align == 0 || num % align == 0) {
@@ -28,36 +29,30 @@ function read_varuint32(array, idx) {
 }
 
 function parse_dylink(module) {
-    let dylink = WebAssembly.Module.customSections(module, "dylink");
-    let dylink_array = new Uint8Array(dylink[0]);
+    let section = WebAssembly.Module.customSections(module, "dylink");
+    let array = new Uint8Array(section[0]);
+
+    let dylink = {};
 
     let idx = 0;
-    let memorysize, memoryalignment, tablesize, tablealignment,
-        needed_dynlibs_count;
-    [memorysize, idx] = read_varuint32(dylink_array, idx);
-    [memoryalignment, idx] = read_varuint32(dylink_array, idx);
-    [tablesize, idx] = read_varuint32(dylink_array, idx);
-    [tablealignment, idx] = read_varuint32(dylink_array, idx);
-    [needed_dynlibs_count, idx] = read_varuint32(dylink_array, idx);
+    let needed_dynlibs_count;
+    [dylink.memorysize, idx] = read_varuint32(array, idx);
+    [dylink.memoryalignment, idx] = read_varuint32(array, idx);
+    [dylink.tablesize, idx] = read_varuint32(array, idx);
+    [dylink.tablealignment, idx] = read_varuint32(array, idx);
+    [needed_dynlibs_count, idx] = read_varuint32(array, idx);
 
     // Load dependency modules, and import their exports
-    let utf8decoder = new TextDecoder(); 
-    let needed_dynlibs = [];
+    dylink.needed_dynlibs = [];
     for (var i = 0; i < needed_dynlibs_count; i++) {
         let length;
-        [length, idx] = read_varuint32(dylink_array, idx);
-        let path = utf8decoder.decode(dylink[0].slice(idx, idx + length));
-        needed_dynlibs.push(path);
+        [length, idx] = read_varuint32(array, idx);
+        let path = utf8decoder.decode(section[0].slice(idx, idx + length));
+        dylink.needed_dynlibs.push(path);
         idx += length;
     }
 
-    return {
-        memorysize: memorysize,
-        memoryalignment: memoryalignment,
-        tablesize: tablesize,
-        tablealignment: tablealignment,
-        needed_dynlibs: needed_dynlibs
-    }
+    return dylink;
 }
 
 class DynamicWebAssembly {

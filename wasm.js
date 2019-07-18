@@ -90,7 +90,8 @@ class DynamicWebAssembly {
             return this.dynamic_libaries[path];
         }
 
-        let data = fs.readFileSync(path);
+        let file = await fs.promises.open(path);
+        let data = await fs.promises.readFile(file);
         let module = await WebAssembly.compile(data);
         let dylink = parse_dylink(module);
 

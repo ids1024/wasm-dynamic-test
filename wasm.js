@@ -3,13 +3,13 @@ function read_varuint32(array, idx) {
     var count = 0;
     while (count < 5) {
         var b = array[idx + count];
-        value |= (b & 0x7f) << (7 * count)
+        value |= (b & 0x7f) << (7 * count);
         count++;
         if ((b & 0x80) == 0) {
             break;
         }
     }
-    return [value, idx + count]
+    return [value, idx + count];
 }
 
 dynamic_libraries = {};

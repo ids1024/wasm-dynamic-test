@@ -1,3 +1,5 @@
+const fs = require('fs');
+
 function read_varuint32(array, idx) {
     var value = 0;
     var count = 0;
@@ -19,7 +21,8 @@ async function load_dynamic_wasm(path, env) {
         return dynamic_libaries[path];
     }
 
-    var module = await WebAssembly.compileStreaming(fetch(path));
+    var data = fs.readFileSync(path);
+    var module = await WebAssembly.compile(data);
 
     var dylink = WebAssembly.Module.customSections(module, "dylink");
     dylink_array = new Uint8Array(dylink[0]);
@@ -49,19 +52,7 @@ async function load_dynamic_wasm(path, env) {
     return instance;
 }
 
-function print(value) {
-    var contents = document.getElementById("contents");
-    var span = document.createElement("span");
-    span.textContent = value.toString();
-    var br = document.createElement("br");
-    contents.appendChild(span);
-    contents.appendChild(br);
-}
-
-var memory = new WebAssembly.Memory({ 
-  'initial': 1024,
-  'maximum': 1024,
-});
+var memory = new WebAssembly.Memory({'initial': 1024});
 __indirect_function_table = new WebAssembly.Table({element: "anyfunc", initial: 0});
 // TODO determine sensible value for stack pointer (look at what lld does)
 __stack_pointer = new WebAssembly.Global({value: "i32", mutable: true}, 1024);
@@ -71,7 +62,7 @@ env = {
     "__stack_pointer": __stack_pointer,
     "__memory_base": 0,
     "__table_base": 0,
-    "print_int": print
+    "print_int": console.log
 }
 
 load_dynamic_wasm("bin.wasm", env).then(instance => instance.exports.main());

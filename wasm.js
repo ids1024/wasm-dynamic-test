@@ -49,20 +49,29 @@ async function load_dynamic_wasm(path, env) {
     return instance;
 }
 
+function print(value) {
+    var contents = document.getElementById("contents");
+    var span = document.createElement("span");
+    span.textContent = value.toString();
+    var br = document.createElement("br");
+    contents.appendChild(span);
+    contents.appendChild(br);
+}
+
 var memory = new WebAssembly.Memory({ 
   'initial': 1024,
   'maximum': 1024,
 });
 __indirect_function_table = new WebAssembly.Table({element: "anyfunc", initial: 0});
-__stack_pointer = new WebAssembly.Global({value: "i32", mutable: true}, 0);
+// TODO determine sensible value for stack pointer (look at what lld does)
+__stack_pointer = new WebAssembly.Global({value: "i32", mutable: true}, 1024);
 env = {
     "memory": memory,
     "__indirect_function_table": __indirect_function_table,
     "__stack_pointer": __stack_pointer,
     "__memory_base": 0,
     "__table_base": 0,
-    "print_int": document.write
+    "print_int": print
 }
 
-//load_dynamic_wasm("bin.wasm", env).then(instance => instance.exports.main());
-load_dynamic_wasm("bin.wasm", env).then(instance => console.log(instance.exports.main));
+load_dynamic_wasm("bin.wasm", env).then(instance => instance.exports.main());

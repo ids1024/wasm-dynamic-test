@@ -3,6 +3,16 @@
 
 const fs = require('fs');
 
+// Default value wasm-ld uses; equal to WasmPageSize
+const STACK_SIZE = 65536;
+
+function round_up_align(num, align) {
+    if (align == 0 || num % align == 0) {
+        return num;
+    }
+    return num + align - num % align;
+}
+
 function read_varuint32(array, idx) {
     let value = 0;
     let count = 0;
@@ -40,8 +50,8 @@ async function load_wasm_module(path, env) {
     [needed_dynlibs_count, idx] = read_varuint32(dylink_array, idx);
 
     importObject = {"env": {}};
-    Object.assign(importObject.env, env);
 
+    // Load dependency modules, and import their exports
     let utf8decoder = new TextDecoder(); 
     for (var i = 0; i < needed_dynlibs_count; i++) {
         let length;
@@ -52,9 +62,17 @@ async function load_wasm_module(path, env) {
         idx += length;
     }
 
+    env.__memory_base = round_up_align(env.__memory_base, memoryalignment);
+
+    Object.assign(importObject.env, env);
 
     let instance = await WebAssembly.instantiate(module, importObject);
     dynamic_libraries[path] = instance;
+
+    // Update values that will be used by next module
+    env.__memory_base += memorysize;
+    env.__table_base += tablesize;
+
     return instance;
 }
 
@@ -62,12 +80,12 @@ function load_wasm(path) {
     let memory = new WebAssembly.Memory({initial: 1024});
     let  __indirect_function_table = new WebAssembly.Table({element: "anyfunc", initial: 0});
     // TODO determine sensible value for stack pointer (look at what lld does)
-    let __stack_pointer = new WebAssembly.Global({value: "i32", mutable: true}, 1024);
+    let __stack_pointer = new WebAssembly.Global({value: "i32", mutable: true}, STACK_SIZE);
     let env = {
         memory: memory,
         __indirect_function_table: __indirect_function_table,
         __stack_pointer: __stack_pointer,
-        __memory_base: 0,
+        __memory_base: STACK_SIZE,
         __table_base: 0,
         print_int: console.log
     };

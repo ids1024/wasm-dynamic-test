@@ -104,6 +104,7 @@ class DynamicWebAssembly {
 
         let env = this.make_env();
         env.__memory_base = round_up_align(env.__memory_base, dylink.memoryalignment);
+        env.__table_base = round_up_align(env.__table_base, dylink.tablealignment);
         for (let library of dynlibs) {
             Object.assign(env, library.exports);
         }

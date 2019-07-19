@@ -56,7 +56,7 @@ function parse_dylink(module) {
     for (var i = 0; i < needed_dynlibs_count; i++) {
         let length;
         [length, idx] = read_varuint32(array, idx);
-        let path = utf8decoder.decode(section[0].slice(idx, idx + length));
+        let path = utf8decoder.decode(array.slice(idx, idx + length));
         dylink.needed_dynlibs.push(path);
         idx += length;
     }

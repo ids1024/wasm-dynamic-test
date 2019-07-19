@@ -108,13 +108,12 @@ class DynamicWebAssembly {
             Object.assign(env, library.exports);
         }
 
-        let instance = await WebAssembly.instantiate(module, {env: env});
-        this.dynamic_libraries[path] = instance;
-
         // Update values that will be used by next module
         this.__memory_base = env.__memory_base + dylink.memorysize;
         this.__table_base = env.__table_base + dylink.tablesize;
 
+        let instance = await WebAssembly.instantiate(module, {env: env});
+        this.dynamic_libraries[path] = instance;
         return instance;
     }
 }

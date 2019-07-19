@@ -51,7 +51,6 @@ function parse_dylink(module) {
     [dylink.tablealignment, idx] = read_varuint32(array, idx);
     [needed_dynlibs_count, idx] = read_varuint32(array, idx);
 
-    // Load dependency modules, and import their exports
     dylink.needed_dynlibs = [];
     for (var i = 0; i < needed_dynlibs_count; i++) {
         let length;

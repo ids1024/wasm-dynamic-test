@@ -12,7 +12,10 @@ lib.wasm: lib.o
 %.o: %.c lib.h
 	clang $(CFLAGS) -c -fPIC -o $@ $<
 
+lint:
+	eslint wasm.js
+
 clean:
 	rm -f *.wasm *.o
 
-.PHONY: all clean
+.PHONY: all clean lint

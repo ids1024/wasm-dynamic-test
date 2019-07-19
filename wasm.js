@@ -3,6 +3,8 @@
 // This is not necessarily a complete implementation of a dynamic loader, nor
 // is it well tested.
 
+'use strict';
+
 const fs = require('fs');
 
 // Default value wasm-ld uses; equal to WasmPageSize

@@ -7,11 +7,12 @@
 
 'use strict';
 
+const { StringDecoder } = require('string_decoder');
 const fs = require('fs');
 
 // Default value wasm-ld uses; equal to WasmPageSize
 const STACK_SIZE = 65536;
-const utf8decoder = new TextDecoder(); 
+const utf8decoder = new StringDecoder();
 
 // Round 'num' up so it is aligned to a multiple of 'align'
 function round_up_align(num, align) {
@@ -57,7 +58,7 @@ function parse_dylink(module) {
     for (var i = 0; i < needed_dynlibs_count; i++) {
         let length;
         [length, idx] = read_varuint32(array, idx);
-        let path = utf8decoder.decode(array.slice(idx, idx + length));
+        let path = utf8decoder.write(array.slice(idx, idx + length));
         dylink.needed_dynlibs.push(path);
         idx += length;
     }

@@ -116,6 +116,7 @@ class DynamicWebAssembly {
 
         let instance = await WebAssembly.instantiate(module, {env: env});
         this.dynamic_libraries[path] = instance;
+        instance.exports.__wasm_call_ctors();
         return instance;
     }
 }

@@ -13,4 +13,4 @@ jobs:
       - run: npm install -g eslint
       - run: make
       - run: make lint
-      - run: ./wasm.js
+      #- run: ./wasm.js

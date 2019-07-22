@@ -2,11 +2,11 @@ version: 2
 jobs:
   build:
     docker:
-      - image: ubuntu:bionic
+      - image: ubuntu:disco
     steps:
       - checkout
       - run: apt-get update && apt-get install -y wget gnupg
-      - run: echo deb http://apt.llvm.org/bionic llvm-toolchain-bionic main >> /etc/apt/sources.list
+      - run: echo deb http://apt.llvm.org/disco llvm-toolchain-disco main >> /etc/apt/sources.list
       - run: wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | apt-key add -
       - run: apt-get update && apt-get install -y clang-9 lld-9 npm
       - run: ln -s clang-9 /usr/bin/clang && ln -s wasm-ld-9 /usr/bin/wasm-ld

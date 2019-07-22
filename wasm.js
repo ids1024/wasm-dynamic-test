@@ -121,5 +121,7 @@ class DynamicWebAssembly {
     }
 }
 
+process.on('unhandledRejection', e => { throw e; });
+
 let wasm = new DynamicWebAssembly({print_int: console.log});
 wasm.load_module("bin.wasm").then(instance => instance.exports.main());

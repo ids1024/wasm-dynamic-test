@@ -1,4 +1,5 @@
-CFLAGS = --target=wasm32 -nostdlib
+# Using emscripten target because of https://bugs.llvm.org/show_bug.cgi?id=42714
+CFLAGS = --target=wasm32-unknown-emscripten -nostdlib
 LDFLAGS = --shared --import-memory
 
 all: bin.wasm

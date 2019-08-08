@@ -89,14 +89,18 @@ class DynamicWebAssembly {
         return env;
     }
 
+    async _read_module(path) {
+        let file = await fs.promises.open(path);
+        let data = await fs.promises.readFile(file);
+        return await WebAssembly.compile(data);
+    }
+
     async load_module(path) {
         if (this.dynamic_libraries[path] !== undefined) {
             return this.dynamic_libaries[path];
         }
 
-        let file = await fs.promises.open(path);
-        let data = await fs.promises.readFile(file);
-        let module = await WebAssembly.compile(data);
+        let module = await this._read_module(path);
         let dylink = parse_dylink(module);
 
         let dynlibs = [];

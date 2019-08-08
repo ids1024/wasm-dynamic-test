@@ -129,14 +129,18 @@ class DynamicWebAssembly {
 
 process.on('unhandledRejection', e => { throw e; });
 
+function print_int(num) {
+    process.stdout.write(num.toString());
+}
+
 function print_str(addr) {
     let u8 = new Uint8Array(wasm.memory.buffer);
     let end = addr;
     while (u8[end] != 0)
         end++;
     let str = utf8decoder.decode(wasm.memory.buffer.slice(addr, end));
-    console.log(str);
+    process.stdout.write(str);
 }
 
-let wasm = new DynamicWebAssembly({print_int: console.log, print_str: print_str});
+let wasm = new DynamicWebAssembly({print_int: print_int, print_str: print_str});
 wasm.load_module("bin.wasm").then(instance => instance.exports.main());

@@ -111,6 +111,8 @@ class DynamicWebAssembly {
             Object.assign(env, library.exports);
         }
 
+        this.__indirect_function_table.grow(dylink.tablesize);
+
         // Update values that will be used by next module
         this.__memory_base = env.__memory_base + dylink.memorysize;
         this.__table_base = env.__table_base + dylink.tablesize;

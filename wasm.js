@@ -118,8 +118,8 @@ class DynamicWebAssembly {
         this.__indirect_function_table.grow(this.__table_base - this.__indirect_function_table.length);
 
         let instance = await WebAssembly.instantiate(module, {env: env});
-        this.dynamic_libraries[path] = instance;
         instance.exports.__wasm_call_ctors();
+        this.dynamic_libraries[path] = instance;
         return instance;
     }
 }

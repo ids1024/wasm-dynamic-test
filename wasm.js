@@ -138,8 +138,7 @@ function print_str(addr) {
     let end = addr;
     while (u8[end] != 0)
         end++;
-    let str = utf8decoder.decode(wasm.memory.buffer.slice(addr, end));
-    process.stdout.write(str);
+    process.stdout.write(Buffer.from(wasm.memory.buffer.slice(addr, end)));
 }
 
 let wasm = new DynamicWebAssembly({print_int: print_int, print_str: print_str});

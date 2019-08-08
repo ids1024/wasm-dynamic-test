@@ -11,7 +11,7 @@ const { StringDecoder } = require('string_decoder');
 const fs = require('fs');
 
 // Default value wasm-ld uses; equal to WasmPageSize
-const STACK_SIZE = 65536;
+const STACK_SIZE = 64 * 1024;
 const utf8decoder = new StringDecoder();
 
 // Round 'num' up so it is aligned to a multiple of 'align'

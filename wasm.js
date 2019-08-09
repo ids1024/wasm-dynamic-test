@@ -134,11 +134,8 @@ function print_int(num) {
 }
 
 function print_str(addr) {
-    let u8 = new Uint8Array(wasm.memory.buffer);
-    let end = addr;
-    while (u8[end] != 0)
-        end++;
-    process.stdout.write(Buffer.from(wasm.memory.buffer.slice(addr, end)));
+    let buf = Buffer.from(wasm.memory.buffer).slice(addr);
+    process.stdout.write(buf.slice(0, buf.indexOf(0)));
 }
 
 let wasm = new DynamicWebAssembly({print_int: print_int, print_str: print_str});
